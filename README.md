@@ -26,7 +26,7 @@
 | 👤 **Kişisel** | Çocuk adını yazar, oyun ona hitap eder |
 | 🎲 **Karışık mod** | 1–10 arası tüm tablolardan karışık sorular |
 | 🔢 **Belirli tablo** | Örn. 9'ları seçince **Sıradan** (9×1, 9×2…) veya **Karışık** sorar |
-| 🔊 **Sesli + görsel** | Her soru Türkçe seslendirilir *ve* ekrana yazılır ("tekrar dinle", ses aç/kapat) |
+| 🔊 **Sesli + görsel** | Her soru "3 kere 1" gibi seslendirilir *ve* ekrana yazılır. Ses, uygulamaya gömülü **gerçek ses klipleriyle** çalar — cihazın TTS motoruna ihtiyaç yoktur (eski/kısıtlı telefonlarda da çalışır) |
 | ⭐ **Ödül sistemi** | Puan, yıldız, seri (streak), konfeti ve rozetler |
 | 🚪 **Çıkış** | Soru sırasında istediğin an menüye dönebilme |
 | 🏆 **Lider tablosu** | Skorlar Cloudflare D1'de saklanır, en iyiler listelenir |
@@ -60,6 +60,7 @@ Cloudflare Worker  ──►  D1 Veritabanı (skorlar)
 | `public/index.html` | Tüm oyun: arayüz, ses, puan, yerel kayıt |
 | `public/manifest.webmanifest` · `public/sw.js` | PWA: yüklenebilirlik + çevrimdışı önbellek |
 | `public/icon-*.png` | Uygulama ikonları |
+| `public/audio/*.m4a` | Türkçe ses klipleri (sayılar, "kere", geri bildirim) |
 | `worker.js` | Cloudflare Worker: `/api/scores` (D1) + statik sunum |
 | `schema.sql` | D1 tablo şeması |
 | `wrangler.toml` | Worker + D1 + statik varlık ayarları |

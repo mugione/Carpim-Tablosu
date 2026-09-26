@@ -1,5 +1,5 @@
 // Çarpım Tablosu — Service Worker (PWA / çevrimdışı destek)
-const CACHE = "carpim-v3";
+const CACHE = "carpim-v4";
 const SHELL = [
   "/",
   "/index.html",
@@ -44,8 +44,16 @@ self.addEventListener("fetch", function (e) {
     return;
   }
 
-  // Diğer varlıklar: önce önbellek, yoksa ağ
+  // Diğer varlıklar (ikonlar, ses klipleri): önce önbellek, yoksa ağdan al ve önbelleğe koy
   e.respondWith(
-    caches.match(req).then(function (r) { return r || fetch(req); })
+    caches.match(req).then(function (r) {
+      return r || fetch(req).then(function (res) {
+        if (res && res.ok && req.method === "GET") {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        }
+        return res;
+      });
+    })
   );
 });

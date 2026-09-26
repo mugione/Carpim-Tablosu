@@ -508,6 +508,76 @@
     } catch (e) {}
   }
 
+  // ---------- Gömülü ses klipleri (cihazın TTS motoruna bağlı KALMADAN çalar) ----------
+  var AUDIO_BASE = "audio/";
+  var UNIT = { 1:"bir",2:"iki",3:"uc",4:"dort",5:"bes",6:"alti",7:"yedi",8:"sekiz",9:"dokuz" };
+  var TENS = { 10:"on",20:"yirmi",30:"otuz",40:"kirk",50:"elli",60:"altmis",70:"yetmis",80:"seksen",90:"doksan" };
+  var audioCache = {};
+  var playToken = 0;
+  var currentAudio = null;
+
+  function getClip(key) {
+    if (!audioCache[key]) {
+      var a = new Audio(AUDIO_BASE + key + ".m4a");
+      a.preload = "auto";
+      audioCache[key] = a;
+    }
+    return audioCache[key];
+  }
+
+  // 1..100 arası bir sayıyı Türkçe klip parçalarına böl
+  function numClips(n) {
+    n = parseInt(n, 10);
+    if (!n || n < 1) return [];
+    if (n === 100) return ["yuz"];
+    if (n < 10) return [UNIT[n]];
+    var out = [], t = Math.floor(n / 10) * 10, u = n % 10;
+    if (TENS[t]) out.push(TENS[t]);
+    if (u > 0) out.push(UNIT[u]);
+    return out;
+  }
+
+  function stopAudio() {
+    playToken++;
+    if (currentAudio) { try { currentAudio.pause(); } catch (e) {} }
+    currentAudio = null;
+    if ("speechSynthesis" in window) { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  }
+
+  // Klipleri sırayla çalar
+  function playSeq(keys) {
+    if (!state.soundOn || !keys || !keys.length) return;
+    stopAudio();
+    var token = playToken, i = 0;
+    (function next() {
+      if (token !== playToken || i >= keys.length) return;
+      var a = getClip(keys[i++]);
+      currentAudio = a;
+      try { a.currentTime = 0; } catch (e) {}
+      a.onended = function () { if (token === playToken) next(); };
+      a.onerror = function () { if (token === playToken) next(); };
+      var p = a.play();
+      if (p && p.catch) p.catch(function () {});
+    })();
+  }
+
+  // Soruyu seslendir: "A kere B"
+  function sayQuestion(q) {
+    playSeq(numClips(q.a).concat(["kere"], numClips(q.b)));
+  }
+
+  // İlk dokunuşta ses motorunu "kilidini aç" (özellikle Android/Samsung için)
+  function unlockAudio() {
+    try {
+      var w = getClip("bir");
+      w.muted = true;
+      var p = w.play();
+      if (p && p.then) p.then(function () { w.pause(); w.currentTime = 0; w.muted = false; })
+        .catch(function () { w.muted = false; });
+      else { w.muted = false; }
+    } catch (e) {}
+  }
+
   // ---------- Soru üretimi ----------
   function buildQuestions() {
     var qs = [];
@@ -573,7 +643,7 @@
     var pct = (state.index / state.questions.length) * 100;
     $("progressBar").style.width = pct + "%";
 
-    speak(q.a + " kere " + q.b);
+    sayQuestion(q);
   }
 
   function updateAnswerDisplay() {
@@ -624,7 +694,7 @@
       fb.textContent = randOf(["Aferin! 🎉", "Süper! 🌟", "Doğru! 👏", "Harika! 💪"]) + " +" + gained;
       fb.className = "feedback good";
       card.classList.remove("flash-good"); void card.offsetWidth; card.classList.add("flash-good");
-      speak(randOf(["Aferin!", "Süper!", "Doğru cevap!", "Harikasın!"]));
+      playSeq([randOf(["aferin", "super", "dogru", "harikasin"])]);
       if (state.streak > 0 && state.streak % 3 === 0) burstConfetti();
 
       setTimeout(nextQuestion, 900);
@@ -637,11 +707,11 @@
       if (state.tries >= 2) {
         // İki yanlıştan sonra doğruyu göster ve geç
         fb.innerHTML = "Doğrusu: " + q.a + " × " + q.b + " = <b>" + q.answer + "</b>";
-        speak("Doğrusu " + q.answer + ". Bir sonraki soruya geçiyoruz.");
+        playSeq(["dogrusu"].concat(numClips(q.answer)));
         setTimeout(nextQuestion, 1900);
       } else {
         fb.textContent = "Tekrar dene! 🤔";
-        speak("Tekrar dene");
+        playSeq(["tekrardene"]);
         state.current = "";
         updateAnswerDisplay();
       }
@@ -704,7 +774,7 @@
     });
 
     if (stars >= 2) burstConfetti(true);
-    speak(state.name + ", " + msg + " " + state.correct + " doğru cevap verdin.");
+    playSeq([stars >= 2 ? "harikasin" : "aferin"]);
     show("result");
 
     // Buluta kaydet + lider tablosunu göster (varsa). Yoksa sessizce yerelde kalır.
@@ -829,8 +899,7 @@
     state.name = name;
     var data = getPlayer(name);
     $("greet").textContent = "Merhaba " + name + "! 👋";
-    // ilk etkileşim: sesi hazırla
-    speak("Merhaba " + name + "! Hadi başlayalım.");
+    unlockAudio(); // ilk dokunuşta ses motorunu aç (Android/Samsung)
     show("mode");
   });
   $("name").addEventListener("keydown", function (e) {
@@ -878,19 +947,19 @@
 
   $("repeatBtn").addEventListener("click", function () {
     var q = state.questions[state.index];
-    speak(q.a + " kere " + q.b);
+    sayQuestion(q);
   });
 
   // Quiz sırasında çıkış -> mod seçim ekranına dön
   $("exitBtn").addEventListener("click", function () {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    stopAudio();
     show("mode");
   });
 
   $("soundToggle").addEventListener("click", function () {
     state.soundOn = !state.soundOn;
     this.textContent = state.soundOn ? "🔔" : "🔕";
-    if (!state.soundOn && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    if (!state.soundOn) stopAudio();
   });
 
   $("againBtn").addEventListener("click", function () { startQuiz(state.mode, state.order); });

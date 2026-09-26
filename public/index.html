@@ -509,9 +509,8 @@
   }
 
   // ---------- Gömülü ses klipleri (cihazın TTS motoruna bağlı KALMADAN çalar) ----------
+  // Her soru tek doğal cümle dosyasıdır (ör. s_2x1.m4a = "iki kere bir") -> akıcı, doğal ses.
   var AUDIO_BASE = "audio/";
-  var UNIT = { 1:"bir",2:"iki",3:"uc",4:"dort",5:"bes",6:"alti",7:"yedi",8:"sekiz",9:"dokuz" };
-  var TENS = { 10:"on",20:"yirmi",30:"otuz",40:"kirk",50:"elli",60:"altmis",70:"yetmis",80:"seksen",90:"doksan" };
   var audioCache = {};
   var playToken = 0;
   var currentAudio = null;
@@ -523,18 +522,6 @@
       audioCache[key] = a;
     }
     return audioCache[key];
-  }
-
-  // 1..100 arası bir sayıyı Türkçe klip parçalarına böl
-  function numClips(n) {
-    n = parseInt(n, 10);
-    if (!n || n < 1) return [];
-    if (n === 100) return ["yuz"];
-    if (n < 10) return [UNIT[n]];
-    var out = [], t = Math.floor(n / 10) * 10, u = n % 10;
-    if (TENS[t]) out.push(TENS[t]);
-    if (u > 0) out.push(UNIT[u]);
-    return out;
   }
 
   function stopAudio() {
@@ -561,15 +548,15 @@
     })();
   }
 
-  // Soruyu seslendir: "A kere B"
+  // Soruyu seslendir: tek doğal cümle dosyası "A kere B"
   function sayQuestion(q) {
-    playSeq(numClips(q.a).concat(["kere"], numClips(q.b)));
+    playSeq(["s_" + q.a + "x" + q.b]);
   }
 
   // İlk dokunuşta ses motorunu "kilidini aç" (özellikle Android/Samsung için)
   function unlockAudio() {
     try {
-      var w = getClip("bir");
+      var w = getClip("s_1x1");
       w.muted = true;
       var p = w.play();
       if (p && p.then) p.then(function () { w.pause(); w.currentTime = 0; w.muted = false; })
@@ -707,7 +694,7 @@
       if (state.tries >= 2) {
         // İki yanlıştan sonra doğruyu göster ve geç
         fb.innerHTML = "Doğrusu: " + q.a + " × " + q.b + " = <b>" + q.answer + "</b>";
-        playSeq(["dogrusu"].concat(numClips(q.answer)));
+        playSeq(["dogrusu", "n_" + q.answer]);
         setTimeout(nextQuestion, 1900);
       } else {
         fb.textContent = "Tekrar dene! 🤔";

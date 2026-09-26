@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#4f46e5" />
+<title>Çarpım Tablosu Macerası</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/icon-192.png" type="image/png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Çarpım Tablosu" />
+<meta name="mobile-web-app-capable" content="yes" />
+<style>
+  :root {
+    --bg1: #4f46e5;
+    --bg2: #7c3aed;
+    --bg3: #ec4899;
+    --card: #ffffff;
+    --ink: #1e293b;
+    --muted: #64748b;
+    --good: #16a34a;
+    --good-bg: #dcfce7;
+    --bad: #dc2626;
+    --bad-bg: #fee2e2;
+    --accent: #4f46e5;
+    --accent-2: #f59e0b;
+    --ring: rgba(79, 70, 229, .35);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    min-height: 100dvh;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2) 55%, var(--bg3));
+    background-attachment: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 16px);
+    overflow-x: hidden;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 28px;
+    padding: 26px 22px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.28);
+    animation: pop .35s ease;
+  }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .hidden { display: none !important; }
+
+  h1 { font-size: clamp(26px, 7vw, 36px); margin: 0 0 6px; text-align: center; }
+  h2 { font-size: clamp(20px, 5.5vw, 26px); margin: 0 0 4px; text-align: center; }
+  .sub { text-align: center; color: var(--muted); margin: 0 0 20px; font-size: 15px; }
+
+  .emoji-big { font-size: 54px; text-align: center; line-height: 1; margin-bottom: 8px; }
+
+  label { display: block; font-weight: 700; margin: 0 0 8px; font-size: 15px; }
+
+  input[type="text"] {
+    width: 100%;
+    font-size: 20px;
+    padding: 15px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--ring); }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    font-size: 18px;
+    font-weight: 800;
+    padding: 16px;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    color: #fff;
+    cursor: pointer;
+    transition: transform .08s, filter .2s, box-shadow .2s;
+    box-shadow: 0 8px 20px var(--ring);
+    margin-top: 14px;
+  }
+  .btn:active { transform: translateY(2px) scale(.99); }
+  .btn:hover { filter: brightness(1.05); }
+  .btn.secondary { background: #f1f5f9; color: var(--ink); box-shadow: none; }
+  .btn.warm { background: linear-gradient(135deg, var(--accent-2), #f97316); box-shadow: 0 8px 20px rgba(245,158,11,.35); }
+
+  /* Mode grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .tile {
+    border: 2px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 18px 6px;
+    font-size: 24px;
+    font-weight: 900;
+    background: #fff;
+    color: var(--accent);
+    cursor: pointer;
+    transition: transform .08s, background .2s, color .2s, border-color .2s;
+    text-align: center;
+  }
+  .tile small { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 4px; }
+  .tile:active { transform: scale(.96); }
+  .tile:hover { border-color: var(--accent); }
+  .tile.mixed {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, var(--accent-2), #f97316);
+    color: #fff;
+    border: none;
+    font-size: 20px;
+    padding: 20px;
+  }
+  .tile.mixed small { color: rgba(255,255,255,.9); }
+
+  /* Quiz */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .pill {
+    background: #eef2ff;
+    color: var(--accent);
+    font-weight: 800;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 14px;
+  }
+  .pill.score { background: #fff7ed; color: #d97706; }
+  .exit-btn {
+    background: #fee2e2;
+    color: var(--bad);
+    border: none;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform .08s;
+  }
+  .exit-btn:active { transform: scale(.95); }
+
+  .progress {
+    height: 12px;
+    background: #eef2f7;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .progress > span {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--bg3));
+    border-radius: 999px;
+    transition: width .4s ease;
+  }
+
+  .question {
+    text-align: center;
+    font-size: clamp(44px, 13vw, 68px);
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin: 6px 0 4px;
+    color: var(--ink);
+  }
+  .question .op { color: var(--accent-2); }
+  .question .q { color: var(--accent); }
+
+  .speak-btn {
+    display: block;
+    margin: 6px auto 18px;
+    background: #eef2ff;
+    border: none;
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 15px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .speak-btn:active { transform: scale(.97); }
+
+  .answer-display {
+    text-align: center;
+    font-size: 40px;
+    font-weight: 900;
+    min-height: 56px;
+    border: 3px dashed #cbd5e1;
+    border-radius: 18px;
+    padding: 8px;
+    margin-bottom: 14px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .answer-display.empty { color: #cbd5e1; }
+
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .key {
+    font-size: 26px;
+    font-weight: 800;
+    padding: 16px 0;
+    border: none;
+    border-radius: 16px;
+    background: #f1f5f9;
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform .06s, background .15s;
+  }
+  .key:active { transform: scale(.94); background: #e2e8f0; }
+  .key.del { background: #fee2e2; color: var(--bad); }
+  .key.ok { background: linear-gradient(135deg, var(--good), #22c55e); color: #fff; }
+
+  .feedback {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 900;
+    min-height: 30px;
+    margin-top: 14px;
+  }
+  .feedback.good { color: var(--good); }
+  .feedback.bad { color: var(--bad); }
+
+  .flash-good { animation: flashGood .5s ease; }
+  .flash-bad { animation: flashBad .4s ease; }
+  @keyframes flashGood { 0%{background:var(--good-bg);} 100%{background:var(--card);} }
+  @keyframes flashBad { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(8px);} 60%{transform:translateX(-6px);} 80%{transform:translateX(6px);} }
+
+  /* Results */
+  .stars { text-align: center; font-size: 42px; margin: 10px 0; letter-spacing: 4px; }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 4px;
+    border-bottom: 1px solid #eef2f7;
+    font-size: 16px;
+  }
+  .result-row b { color: var(--accent); }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .toggle-row button {
+    background: none; border: none; cursor: pointer; font-size: 22px;
+  }
+
+  .confetti {
+    position: fixed; top: -10px; width: 10px; height: 16px;
+    opacity: .9; pointer-events: none; z-index: 50; border-radius: 2px;
+  }
+  @keyframes fall {
+    to { transform: translateY(110dvh) rotate(720deg); opacity: 0; }
+  }
+
+  .badge-list { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:10px; }
+  .badge { background:#eef2ff; color:var(--accent); font-weight:800; font-size:13px; padding:6px 12px; border-radius:999px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 1) İSİM EKRANI -->
+  <section id="screen-name" class="card">
+    <div class="emoji-big">🎯✖️</div>
+    <h1>Çarpım Tablosu Macerası</h1>
+    <p class="sub">Öğrenmeye başlamak için adını yaz!</p>
+    <label for="name">Adın ne?</label>
+    <input type="text" id="name" placeholder="Örn: Ali" autocomplete="off" maxlength="20" />
+    <button class="btn" id="startNameBtn">Başla 🚀</button>
+  </section>
+
+  <!-- 2) MOD SEÇİMİ -->
+  <section id="screen-mode" class="card hidden">
+    <h2 id="greet">Merhaba! 👋</h2>
+    <p class="sub">Hangisini çalışmak istersin?</p>
+    <div class="grid" id="modeGrid">
+      <div class="tile mixed" data-mode="mixed">
+        🎲 Karışık
+        <small>1'den 10'a kadar karışık sorular</small>
+      </div>
+      <!-- tablolar JS ile eklenir -->
+    </div>
+    <div class="toggle-row">
+      <span>🔊 Ses</span>
+      <button id="soundToggle" title="Sesi aç/kapat">🔔</button>
+    </div>
+  </section>
+
+  <!-- 2.5) SIRA SEÇİMİ (belirli tablo için) -->
+  <section id="screen-order" class="card hidden">
+    <div class="emoji-big">✖️</div>
+    <h2 id="orderTitle">9'lar Tablosu</h2>
+    <p class="sub">Nasıl sorulsun?</p>
+    <div class="grid">
+      <div class="tile mixed" data-order="seq" style="background:linear-gradient(135deg,#4f46e5,#6366f1);">
+        🔢 Sıradan
+        <small id="seqHint">1'den 10'a sırayla</small>
+      </div>
+      <div class="tile mixed" data-order="shuffle">
+        🔀 Karışık
+        <small id="shuffleHint">bu tablo karışık sırayla</small>
+      </div>
+    </div>
+    <button class="btn secondary" id="orderBack">← Geri</button>
+  </section>
+
+  <!-- 3) QUIZ -->
+  <section id="screen-quiz" class="card hidden">
+    <div class="topbar">
+      <button class="exit-btn" id="exitBtn" title="Çıkış">✕ Çıkış</button>
+      <span class="pill" id="modeLabel">Karışık</span>
+      <span class="pill score" id="scorePill">⭐ 0</span>
+    </div>
+    <div class="progress"><span id="progressBar"></span></div>
+    <div class="question" id="questionText"></div>
+    <button class="speak-btn" id="repeatBtn">🔊 Tekrar dinle</button>
+    <div class="answer-display empty" id="answerDisplay">?</div>
+    <div class="keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key del" data-k="del">⌫</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key ok" data-k="ok">✓</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </section>
+
+  <!-- 4) SONUÇ -->
+  <section id="screen-result" class="card hidden">
+    <div class="emoji-big" id="resultEmoji">🎉</div>
+    <h2 id="resultTitle">Harikasın!</h2>
+    <div class="stars" id="resultStars">⭐⭐⭐</div>
+    <div class="result-row"><span>Doğru cevap</span> <b id="rCorrect">0 / 10</b></div>
+    <div class="result-row"><span>Kazanılan puan</span> <b id="rScore">0</b></div>
+    <div class="result-row"><span>En uzun seri</span> <b id="rStreak">0</b></div>
+    <div class="result-row"><span>Toplam yıldızın</span> <b id="rTotal">0</b></div>
+    <div class="badge-list" id="badgeList"></div>
+
+    <div id="leaderboardBox" class="hidden" style="margin-top:18px;">
+      <h3 style="text-align:center;font-size:18px;margin:0 0 6px;">🏆 En İyi Skorlar</h3>
+      <div id="leaderboard"></div>
+    </div>
+
+    <button class="btn warm" id="againBtn">Tekrar Oyna 🔁</button>
+    <button class="btn secondary" id="menuBtn">Başka Tablo Seç 📚</button>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Durum ----------
+  var state = {
+    name: "",
+    mode: "mixed",       // "mixed" ya da 1..10
+    order: "seq",        // belirli tablo için: "seq" (sıradan) veya "shuffle" (karışık)
+    pendingTable: null,  // sıra seçimi bekleyen tablo numarası
+    questions: [],       // {a,b,answer}
+    index: 0,
+    score: 0,
+    correct: 0,
+    streak: 0,
+    bestStreak: 0,
+    current: "",         // girilen cevap
+    tries: 0,
+    soundOn: true
+  };
+
+  var QUESTION_COUNT = 10;
+
+  // ---------- Elemanlar ----------
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = {
+    name: $("screen-name"),
+    mode: $("screen-mode"),
+    order: $("screen-order"),
+    quiz: $("screen-quiz"),
+    result: $("screen-result")
+  };
+
+  function show(name) {
+    Object.keys(screens).forEach(function (k) {
+      screens[k].classList.toggle("hidden", k !== name);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- Kayıt (localStorage) ----------
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem("carpim_store") || "{}"); }
+    catch (e) { return {}; }
+  }
+  function saveStore(s) {
+    try { localStorage.setItem("carpim_store", JSON.stringify(s)); } catch (e) {}
+  }
+  function getPlayer(name) {
+    var s = loadStore();
+    var key = name.toLowerCase();
+    if (!s[key]) s[key] = { name: name, totalStars: 0, best: {}, badges: [] };
+    return { store: s, key: key, player: s[key] };
+  }
+
+  // ---------- Ses (Web Speech API) ----------
+  var voiceTR = null;
+  function pickVoice() {
+    if (!("speechSynthesis" in window)) return;
+    var voices = window.speechSynthesis.getVoices();
+    voiceTR = voices.find(function (v) { return /tr(-|_)?/i.test(v.lang); }) || null;
+  }
+  if ("speechSynthesis" in window) {
+    pickVoice();
+    window.speechSynthesis.onvoiceschanged = pickVoice;
+  }
+  function speak(text) {
+    if (!state.soundOn || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = "tr-TR";
+      u.rate = 0.95;
+      u.pitch = 1.05;
+      if (voiceTR) u.voice = voiceTR;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  // ---------- Soru üretimi ----------
+  function buildQuestions() {
+    var qs = [];
+    if (state.mode === "mixed") {
+      // Birler ile onlar arasında karışık: 1..10 x 1..10
+      for (var i = 0; i < QUESTION_COUNT; i++) {
+        var a = 1 + Math.floor(Math.random() * 10);
+        var b = 1 + Math.floor(Math.random() * 10);
+        qs.push({ a: a, b: b, answer: a * b });
+      }
+    } else {
+      // Belirli tablo: N x 1 .. N x 10
+      var n = state.mode;
+      for (var m = 1; m <= 10; m++) {
+        qs.push({ a: n, b: m, answer: n * m });
+      }
+      if (state.order === "shuffle") shuffle(qs); // karışık istenirse sırayı boz
+    }
+    return qs;
+  }
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  // ---------- Quiz akışı ----------
+  function startQuiz(mode, order) {
+    state.mode = mode;
+    state.order = order || "seq";
+    state.questions = buildQuestions();
+    state.index = 0;
+    state.score = 0;
+    state.correct = 0;
+    state.streak = 0;
+    state.bestStreak = 0;
+    state.current = "";
+    state.tries = 0;
+
+    $("modeLabel").textContent = mode === "mixed"
+      ? "🎲 Karışık"
+      : (mode + "'ler " + (state.order === "shuffle" ? "🔀" : "🔢"));
+    updateScore();
+    show("quiz");
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    var q = state.questions[state.index];
+    state.current = "";
+    state.tries = 0;
+    updateAnswerDisplay();
+    $("feedback").textContent = "";
+    $("feedback").className = "feedback";
+
+    $("questionText").innerHTML =
+      '<span>' + q.a + '</span> <span class="op">×</span> <span>' + q.b +
+      '</span> <span class="op">=</span> <span class="q">?</span>';
+
+    var pct = (state.index / state.questions.length) * 100;
+    $("progressBar").style.width = pct + "%";
+
+    speak(q.a + " çarpı " + q.b + " kaç eder?");
+  }
+
+  function updateAnswerDisplay() {
+    var el = $("answerDisplay");
+    if (state.current === "") {
+      el.textContent = "?";
+      el.classList.add("empty");
+    } else {
+      el.textContent = state.current;
+      el.classList.remove("empty");
+    }
+  }
+
+  function updateScore() {
+    $("scorePill").textContent = "⭐ " + state.score;
+  }
+
+  function pressKey(k) {
+    if (k === "del") {
+      state.current = state.current.slice(0, -1);
+      updateAnswerDisplay();
+    } else if (k === "ok") {
+      checkAnswer();
+    } else {
+      if (state.current.length >= 3) return;
+      if (state.current === "0") state.current = "";
+      state.current += k;
+      updateAnswerDisplay();
+    }
+  }
+
+  function checkAnswer() {
+    if (state.current === "") return;
+    var q = state.questions[state.index];
+    var val = parseInt(state.current, 10);
+    var fb = $("feedback");
+    var card = screens.quiz;
+
+    if (val === q.answer) {
+      state.tries++;
+      var gained = state.tries === 1 ? 10 : 5;   // ilk denemede tam puan
+      state.score += gained;
+      state.correct++;
+      state.streak++;
+      if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+
+      updateScore();
+      fb.textContent = randOf(["Aferin! 🎉", "Süper! 🌟", "Doğru! 👏", "Harika! 💪"]) + " +" + gained;
+      fb.className = "feedback good";
+      card.classList.remove("flash-good"); void card.offsetWidth; card.classList.add("flash-good");
+      speak(randOf(["Aferin!", "Süper!", "Doğru cevap!", "Harikasın!"]));
+      if (state.streak > 0 && state.streak % 3 === 0) burstConfetti();
+
+      setTimeout(nextQuestion, 900);
+    } else {
+      state.tries++;
+      state.streak = 0;
+      fb.className = "feedback bad";
+      card.classList.remove("flash-bad"); void card.offsetWidth; card.classList.add("flash-bad");
+
+      if (state.tries >= 2) {
+        // İki yanlıştan sonra doğruyu göster ve geç
+        fb.innerHTML = "Doğrusu: " + q.a + " × " + q.b + " = <b>" + q.answer + "</b>";
+        speak("Doğrusu " + q.answer + ". Bir sonraki soruya geçiyoruz.");
+        setTimeout(nextQuestion, 1900);
+      } else {
+        fb.textContent = "Tekrar dene! 🤔";
+        speak("Tekrar dene");
+        state.current = "";
+        updateAnswerDisplay();
+      }
+    }
+  }
+
+  function nextQuestion() {
+    state.index++;
+    if (state.index >= state.questions.length) {
+      finishQuiz();
+    } else {
+      renderQuestion();
+    }
+  }
+
+  function randOf(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // ---------- Sonuç ----------
+  function finishQuiz() {
+    $("progressBar").style.width = "100%";
+    var total = state.questions.length;
+    var ratio = state.correct / total;
+    var stars = ratio >= 0.9 ? 3 : ratio >= 0.6 ? 2 : ratio >= 0.3 ? 1 : 0;
+
+    $("rCorrect").textContent = state.correct + " / " + total;
+    $("rScore").textContent = state.score;
+    $("rStreak").textContent = state.bestStreak;
+    $("resultStars").textContent = "⭐".repeat(stars) + "☆".repeat(3 - stars);
+
+    var msg, emoji;
+    if (stars === 3) { msg = "Mükemmelsin!"; emoji = "🏆"; }
+    else if (stars === 2) { msg = "Çok iyi gidiyorsun!"; emoji = "🎉"; }
+    else if (stars === 1) { msg = "Güzel başlangıç!"; emoji = "😊"; }
+    else { msg = "Alıştırma yapmaya devam!"; emoji = "💪"; }
+    $("resultTitle").textContent = state.name + ", " + msg;
+    $("resultEmoji").textContent = emoji;
+
+    // Kaydet
+    var data = getPlayer(state.name);
+    var p = data.player;
+    p.totalStars += stars;
+    var modeKey = String(state.mode);
+    if (!p.best[modeKey] || state.score > p.best[modeKey]) p.best[modeKey] = state.score;
+    // Rozetler
+    var badges = new Set(p.badges);
+    if (stars === 3) badges.add((state.mode === "mixed" ? "Karışık" : state.mode + "'ler") + " Ustası 🥇");
+    if (state.bestStreak >= 5) badges.add("5 Seri 🔥");
+    if (p.totalStars >= 30) badges.add("Yıldız Avcısı 🌟");
+    p.badges = Array.from(badges);
+    saveStore(data.store);
+
+    $("rTotal").textContent = p.totalStars;
+    var bl = $("badgeList");
+    bl.innerHTML = "";
+    p.badges.slice(-6).forEach(function (b) {
+      var span = document.createElement("span");
+      span.className = "badge";
+      span.textContent = b;
+      bl.appendChild(span);
+    });
+
+    if (stars >= 2) burstConfetti(true);
+    speak(state.name + ", " + msg + " " + state.correct + " doğru cevap verdin.");
+    show("result");
+
+    // Buluta kaydet + lider tablosunu göster (varsa). Yoksa sessizce yerelde kalır.
+    submitScore(stars);
+  }
+
+  // ---------- Cloud (Cloudflare D1 üzerinden Pages Function) ----------
+  function apiAvailable() {
+    return location.protocol === "http:" || location.protocol === "https:";
+  }
+
+  function submitScore(stars) {
+    if (!apiAvailable()) return; // yerel dosyada API yok, sadece localStorage
+    fetch("/api/scores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: state.name,
+        mode: String(state.mode),
+        score: state.score,
+        correct: state.correct,
+        total: state.questions.length,
+        stars: stars
+      })
+    })
+      .then(function () { return loadLeaderboard(); })
+      .catch(function () { /* backend yoksa sorun değil */ });
+  }
+
+  function loadLeaderboard() {
+    if (!apiAvailable()) return;
+    fetch("/api/scores")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.leaderboard) return;
+        var box = $("leaderboardBox");
+        var list = $("leaderboard");
+        list.innerHTML = "";
+        data.leaderboard.slice(0, 10).forEach(function (row, i) {
+          var medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1) + ".";
+          var div = document.createElement("div");
+          div.className = "result-row";
+          var isMe = row.name && row.name.toLowerCase() === state.name.toLowerCase();
+          div.innerHTML = "<span>" + medal + " " +
+            (isMe ? "<b>" + escapeHtml(row.name) + " (sen)</b>" : escapeHtml(row.name)) +
+            "</span> <b>⭐ " + row.score + "</b>";
+          list.appendChild(div);
+        });
+        box.classList.remove("hidden");
+      })
+      .catch(function () {});
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // ---------- Konfeti ----------
+  function burstConfetti(big) {
+    var colors = ["#f59e0b", "#ec4899", "#4f46e5", "#16a34a", "#06b6d4", "#f97316"];
+    var count = big ? 60 : 24;
+    for (var i = 0; i < count; i++) {
+      (function () {
+        var c = document.createElement("div");
+        c.className = "confetti";
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.animation = "fall " + (1.5 + Math.random() * 1.5) + "s linear forwards";
+        c.style.transform = "rotate(" + (Math.random() * 360) + "deg)";
+        document.body.appendChild(c);
+        setTimeout(function () { c.remove(); }, 3200);
+      })();
+    }
+  }
+
+  // ---------- Mod kutuları ----------
+  function buildModeTiles() {
+    var grid = $("modeGrid");
+    for (var n = 1; n <= 10; n++) {
+      (function (n) {
+        var t = document.createElement("div");
+        t.className = "tile";
+        t.setAttribute("data-mode", String(n));
+        t.innerHTML = n + "<small>" + n + "'ler tablosu</small>";
+        grid.appendChild(t);
+      })(n);
+    }
+  }
+
+  // ---------- Olaylar ----------
+  $("startNameBtn").addEventListener("click", function () {
+    var name = $("name").value.trim();
+    if (!name) { $("name").focus(); return; }
+    state.name = name;
+    var data = getPlayer(name);
+    $("greet").textContent = "Merhaba " + name + "! 👋";
+    // ilk etkileşim: sesi hazırla
+    speak("Merhaba " + name + "! Hadi başlayalım.");
+    show("mode");
+  });
+  $("name").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") $("startNameBtn").click();
+  });
+
+  $("modeGrid").addEventListener("click", function (e) {
+    var tile = e.target.closest(".tile");
+    if (!tile) return;
+    var mode = tile.getAttribute("data-mode");
+    if (mode === "mixed") {
+      startQuiz("mixed");        // tüm tablolar karışık
+    } else {
+      // Belirli tablo seçildi -> sıra seçimi ekranını göster
+      var n = parseInt(mode, 10);
+      state.pendingTable = n;
+      $("orderTitle").textContent = n + "'ler Tablosu";
+      $("seqHint").textContent = n + "×1, " + n + "×2, ... sırayla";
+      $("shuffleHint").textContent = n + "'ler karışık sırayla";
+      show("order");
+    }
+  });
+
+  // Sıra seçimi ekranı
+  $("screen-order").addEventListener("click", function (e) {
+    var tile = e.target.closest(".tile[data-order]");
+    if (!tile) return;
+    startQuiz(state.pendingTable, tile.getAttribute("data-order"));
+  });
+  $("orderBack").addEventListener("click", function () { show("mode"); });
+
+  document.querySelector(".keypad").addEventListener("click", function (e) {
+    var key = e.target.closest(".key");
+    if (!key) return;
+    pressKey(key.getAttribute("data-k"));
+  });
+
+  // Fiziksel klavye desteği
+  document.addEventListener("keydown", function (e) {
+    if (screens.quiz.classList.contains("hidden")) return;
+    if (e.key >= "0" && e.key <= "9") pressKey(e.key);
+    else if (e.key === "Backspace") pressKey("del");
+    else if (e.key === "Enter") pressKey("ok");
+  });
+
+  $("repeatBtn").addEventListener("click", function () {
+    var q = state.questions[state.index];
+    speak(q.a + " çarpı " + q.b + " kaç eder?");
+  });
+
+  // Quiz sırasında çıkış -> mod seçim ekranına dön
+  $("exitBtn").addEventListener("click", function () {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    show("mode");
+  });
+
+  $("soundToggle").addEventListener("click", function () {
+    state.soundOn = !state.soundOn;
+    this.textContent = state.soundOn ? "🔔" : "🔕";
+    if (!state.soundOn && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  });
+
+  $("againBtn").addEventListener("click", function () { startQuiz(state.mode, state.order); });
+  $("menuBtn").addEventListener("click", function () { show("mode"); });
+
+  // ---------- Başlat ----------
+  buildModeTiles();
+  show("name");
+
+  // ---------- PWA: service worker kaydı ----------
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+name = "carpim-tablosu"
+main = "worker.js"
+compatibility_date = "2024-09-26"
+
+# Statik dosyalar (index.html) public/ klasöründen sunulur.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# D1 veritabanı bağlantısı (binding). API anahtarı gerekmez.
+[[d1_databases]]
+binding = "DB"
+database_name = "carpim_tablosu"
+database_id = "10b581f9-c672-4e69-b1ae-38a4f35ebd1d"

@@ -1,5 +1,5 @@
 // Çarpım Tablosu — Service Worker (PWA / çevrimdışı destek)
-const CACHE = "carpim-v1";
+const CACHE = "carpim-v2";
 const SHELL = [
   "/",
   "/index.html",

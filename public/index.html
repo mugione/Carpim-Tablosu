@@ -290,6 +290,20 @@
     to { transform: translateY(110dvh) rotate(720deg); opacity: 0; }
   }
 
+  .ios-hint {
+    text-align: center; color: var(--muted); font-size: 14px;
+    background: #f1f5f9; border-radius: 14px; padding: 12px; margin: 12px 0 0;
+  }
+  .lb-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+  .lb-tab {
+    flex: 1; border: none; cursor: pointer;
+    background: #f1f5f9; color: var(--muted);
+    font-weight: 800; font-size: 14px; padding: 10px; border-radius: 12px;
+    transition: background .2s, color .2s;
+  }
+  .lb-tab.active { background: var(--accent); color: #fff; }
+  .lb-row-sub { font-size: 12px; color: var(--muted); font-weight: 700; }
+
   .badge-list { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:10px; }
   .badge { background:#eef2ff; color:var(--accent); font-weight:800; font-size:13px; padding:6px 12px; border-radius:999px; }
 </style>
@@ -305,6 +319,8 @@
     <label for="name">Adın ne?</label>
     <input type="text" id="name" placeholder="Örn: Ali" autocomplete="off" maxlength="20" />
     <button class="btn" id="startNameBtn">Başla 🚀</button>
+    <button class="btn secondary hidden" id="installBtn">📲 Ana ekrana ekle</button>
+    <p class="ios-hint hidden" id="iosHint">📲 Ana ekrana eklemek için: <b>Paylaş</b> ⎋ → <b>Ana Ekrana Ekle</b></p>
   </section>
 
   <!-- 2) MOD SEÇİMİ -->
@@ -382,7 +398,10 @@
     <div class="badge-list" id="badgeList"></div>
 
     <div id="leaderboardBox" class="hidden" style="margin-top:18px;">
-      <h3 style="text-align:center;font-size:18px;margin:0 0 6px;">🏆 En İyi Skorlar</h3>
+      <div class="lb-tabs">
+        <button class="lb-tab active" id="tabBest">🏆 En İyiler</button>
+        <button class="lb-tab" id="tabRecent">🕐 Son 10</button>
+      </div>
       <div id="leaderboard"></div>
     </div>
 
@@ -697,23 +716,49 @@
       .catch(function () { /* backend yoksa sorun değil */ });
   }
 
-  function loadLeaderboard() {
+  var lbView = "best"; // "best" (en iyiler) veya "recent" (son 10)
+
+  function modeText(m) {
+    return m === "mixed" ? "🎲 Karışık" : m + "'ler";
+  }
+
+  function loadLeaderboard(view) {
     if (!apiAvailable()) return;
-    fetch("/api/scores")
+    if (view) lbView = view;
+    $("tabBest").classList.toggle("active", lbView === "best");
+    $("tabRecent").classList.toggle("active", lbView === "recent");
+
+    var endpoint = lbView === "recent" ? "/api/scores?recent=1" : "/api/scores";
+    fetch(endpoint)
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
-        if (!data || !data.leaderboard) return;
+        if (!data) return;
         var box = $("leaderboardBox");
         var list = $("leaderboard");
+        var rows = lbView === "recent" ? (data.recent || []) : (data.leaderboard || []);
         list.innerHTML = "";
-        data.leaderboard.slice(0, 10).forEach(function (row, i) {
-          var medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1) + ".";
+
+        if (rows.length === 0) {
+          var empty = document.createElement("div");
+          empty.className = "result-row";
+          empty.innerHTML = "<span style='color:var(--muted)'>Henüz kayıt yok</span>";
+          list.appendChild(empty);
+        }
+
+        rows.slice(0, 10).forEach(function (row, i) {
           var div = document.createElement("div");
           div.className = "result-row";
           var isMe = row.name && row.name.toLowerCase() === state.name.toLowerCase();
-          div.innerHTML = "<span>" + medal + " " +
-            (isMe ? "<b>" + escapeHtml(row.name) + " (sen)</b>" : escapeHtml(row.name)) +
-            "</span> <b>⭐ " + row.score + "</b>";
+          var nameHtml = isMe ? "<b>" + escapeHtml(row.name) + " (sen)</b>" : escapeHtml(row.name);
+          if (lbView === "recent") {
+            div.innerHTML =
+              "<span>" + nameHtml +
+              " <span class='lb-row-sub'>· " + modeText(String(row.mode)) + "</span></span>" +
+              "<b>⭐ " + row.score + "</b>";
+          } else {
+            var medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1) + ".";
+            div.innerHTML = "<span>" + medal + " " + nameHtml + "</span> <b>⭐ " + row.score + "</b>";
+          }
           list.appendChild(div);
         });
         box.classList.remove("hidden");
@@ -833,6 +878,10 @@
   $("againBtn").addEventListener("click", function () { startQuiz(state.mode, state.order); });
   $("menuBtn").addEventListener("click", function () { show("mode"); });
 
+  // Lider tablosu sekmeleri
+  $("tabBest").addEventListener("click", function () { loadLeaderboard("best"); });
+  $("tabRecent").addEventListener("click", function () { loadLeaderboard("recent"); });
+
   // ---------- Başlat ----------
   buildModeTiles();
   show("name");
@@ -843,6 +892,34 @@
       navigator.serviceWorker.register("/sw.js").catch(function () {});
     });
   }
+
+  // ---------- PWA: "Ana ekrana ekle" düğmesi ----------
+  var deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();            // tarayıcının kendi mini uyarısını engelle
+    deferredPrompt = e;
+    $("installBtn").classList.remove("hidden");   // kendi düğmemizi göster
+  });
+  $("installBtn").addEventListener("click", function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    if (deferredPrompt.userChoice) deferredPrompt.userChoice.catch(function () {});
+    deferredPrompt = null;
+    $("installBtn").classList.add("hidden");
+  });
+  window.addEventListener("appinstalled", function () {
+    $("installBtn").classList.add("hidden");
+  });
+
+  // iOS Safari otomatik uyarı vermez -> elle ekleme ipucu göster
+  (function () {
+    var ua = navigator.userAgent || "";
+    var isIOS = /iphone|ipad|ipod/i.test(ua) ||
+      (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); // iPadOS
+    var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true;
+    if (isIOS && !standalone) $("iosHint").classList.remove("hidden");
+  })();
 })();
 </script>
 </body>

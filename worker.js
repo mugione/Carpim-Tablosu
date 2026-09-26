@@ -25,6 +25,16 @@ async function getLeaderboard(env) {
   return json({ ok: true, leaderboard: results || [] });
 }
 
+async function getRecent(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT name, mode, score, stars, created_at
+     FROM scores
+     ORDER BY id DESC
+     LIMIT 10`
+  ).all();
+  return json({ ok: true, recent: results || [] });
+}
+
 async function saveScore(request, env) {
   let body;
   try { body = await request.json(); }
@@ -54,7 +64,9 @@ export default {
       try {
         if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
         if (!env.DB) return json({ error: "Veritabanı bağlı değil" }, 500);
-        if (request.method === "GET") return await getLeaderboard(env);
+        if (request.method === "GET") {
+          return url.searchParams.get("recent") ? await getRecent(env) : await getLeaderboard(env);
+        }
         if (request.method === "POST") return await saveScore(request, env);
         return json({ error: "İzin verilmeyen metot" }, 405);
       } catch (e) {

@@ -477,16 +477,34 @@
     pickVoice();
     window.speechSynthesis.onvoiceschanged = pickVoice;
   }
+  var _utterRefs = []; // Android'de utterance'ın erken silinmesini önlemek için
+
   function speak(text) {
     if (!state.soundOn || !("speechSynthesis" in window)) return;
     try {
-      window.speechSynthesis.cancel();
+      var synth = window.speechSynthesis;
+      synth.cancel();
+
       var u = new SpeechSynthesisUtterance(text);
       u.lang = "tr-TR";
       u.rate = 0.95;
       u.pitch = 1.05;
+      // Türkçe ses varsa onu kullan; yoksa cihazın varsayılan sesiyle dener
+      if (!voiceTR) pickVoice();
       if (voiceTR) u.voice = voiceTR;
-      window.speechSynthesis.speak(u);
+
+      // GC koruması (bazı Android tarayıcılarında ses çıkmamasının nedeni)
+      _utterRefs.push(u);
+      u.onend = u.onerror = function () {
+        var i = _utterRefs.indexOf(u);
+        if (i >= 0) _utterRefs.splice(i, 1);
+      };
+
+      // Android: motor "duraklamış" kalabilir -> devam ettir
+      if (synth.paused) synth.resume();
+      synth.speak(u);
+      // Chrome/Android hata düzeltmesi: konuşma başlamazsa tekrar dürt
+      setTimeout(function () { try { if (synth.paused) synth.resume(); } catch (e) {} }, 80);
     } catch (e) {}
   }
 
@@ -555,7 +573,7 @@
     var pct = (state.index / state.questions.length) * 100;
     $("progressBar").style.width = pct + "%";
 
-    speak(q.a + " çarpı " + q.b + " kaç eder?");
+    speak(q.a + " kere " + q.b);
   }
 
   function updateAnswerDisplay() {
@@ -860,7 +878,7 @@
 
   $("repeatBtn").addEventListener("click", function () {
     var q = state.questions[state.index];
-    speak(q.a + " çarpı " + q.b + " kaç eder?");
+    speak(q.a + " kere " + q.b);
   });
 
   // Quiz sırasında çıkış -> mod seçim ekranına dön

@@ -12,6 +12,7 @@
 ![D1](https://img.shields.io/badge/Cloudflare-D1-F38020?logo=cloudflare&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Yüklenebilir-5A0FC8?logo=pwa&logoColor=white)
 ![Vanilla JS](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?logo=javascript&logoColor=black)
+![ElevenLabs](https://img.shields.io/badge/Ses-ElevenLabs_v3-000000?logo=elevenlabs&logoColor=white)
 ![No Build](https://img.shields.io/badge/Build-Gerekmez-16a34a)
 ![License](https://img.shields.io/badge/Lisans-MIT-blue)
 
@@ -26,7 +27,7 @@
 | 👤 **Kişisel** | Çocuk adını yazar, oyun ona hitap eder |
 | 🎲 **Karışık mod** | 1–10 arası tüm tablolardan karışık sorular |
 | 🔢 **Belirli tablo** | Örn. 9'ları seçince **Sıradan** (9×1, 9×2…) veya **Karışık** sorar |
-| 🔊 **Sesli + görsel** | Her soru "3 kere 1" gibi seslendirilir *ve* ekrana yazılır. Ses, uygulamaya gömülü **gerçek ses klipleriyle** çalar — cihazın TTS motoruna ihtiyaç yoktur (eski/kısıtlı telefonlarda da çalışır) |
+| 🔊 **Sesli + görsel** | Her soru "yedi kere sekiz" gibi seslendirilir *ve* ekrana yazılır. Sesler **ElevenLabs** ile üretilmiş doğal Türkçe kliplerdir ve uygulamaya gömülüdür — internet, API anahtarı veya cihazın TTS motoru gerekmez (eski/kısıtlı telefonlarda da çalışır) |
 | ⭐ **Ödül sistemi** | Puan, yıldız, seri (streak), konfeti ve rozetler |
 | 🚪 **Çıkış** | Soru sırasında istediğin an menüye dönebilme |
 | 🏆 **Lider tablosu** | Skorlar Cloudflare D1'de saklanır, en iyiler listelenir |
@@ -41,6 +42,33 @@
 Adını yaz  →  Mod seç (Karışık / bir tablo)  →  (tablo ise) Sıradan mı Karışık mı?
            →  Soruları çöz (sesli + ekranda)  →  Puan & yıldız kazan  →  🏆 Lider tablosu
 ```
+
+---
+
+## 🎙️ Seslendirme
+
+Oyundaki tüm sesler [ElevenLabs](https://elevenlabs.io) ile **önceden bir kez üretilmiş** hazır dosyalardır.
+
+| | |
+|---|---|
+| 🤖 **Model** | `eleven_v3` (ElevenLabs'in en doğal/ifadeli modeli) |
+| 🗣️ **Ses** | Matilda — sıcak, anlaşılır, çocuklara uygun |
+| 🇹🇷 **Dil** | Türkçe (`tr`); sayılar rakamla değil yazıyla seslendirildi ("yetmiş iki") |
+| 🎧 **Format** | AAC / `.m4a`, 22 kHz mono — klip başına ~15 KB, toplam ~3 MB |
+
+**206 klip** şöyle adlandırılır:
+
+| Dosya | Örnek | Ne zaman çalar |
+|---|---|---|
+| `s_AxB.m4a` (100 adet) | `s_7x8` → "Yedi kere sekiz." | Soru ekrana gelince / 🔁 tekrar düğmesi |
+| `n_N.m4a` (100 adet) | `n_56` → "Elli altı." | İki yanlıştan sonra doğru cevap |
+| `dogrusu.m4a` | "Doğrusu…" | Doğru cevaptan hemen önce |
+| `aferin` · `super` · `dogru` · `harikasin` | "Aferin!", "Süper!"… | Doğru cevapta (rastgele) |
+| `tekrardene.m4a` | "Tekrar dene!" | İlk yanlışta |
+
+> 🔑 **Uygulama ElevenLabs'e hiç bağlanmaz.** API anahtarı yalnızca sesler üretilirken kullanıldı; kodda, repoda veya yayındaki sitede **yer almaz**. Oyun oynandıkça ek ücret de oluşmaz.
+
+Sesleri değiştirmek isterseniz, aynı adlarla yeni `.m4a` dosyaları koyup `public/sw.js` içindeki `CACHE` sürümünü artırmanız (ör. `carpim-v6` → `carpim-v7`) yeterlidir; böylece yüklü uygulamalar yeni sesleri indirir.
 
 ---
 
@@ -60,7 +88,7 @@ Cloudflare Worker  ──►  D1 Veritabanı (skorlar)
 | `public/index.html` | Tüm oyun: arayüz, ses, puan, yerel kayıt |
 | `public/manifest.webmanifest` · `public/sw.js` | PWA: yüklenebilirlik + çevrimdışı önbellek |
 | `public/icon-*.png` | Uygulama ikonları |
-| `public/audio/*.m4a` | Türkçe ses klipleri (sayılar, "kere", geri bildirim) |
+| `public/audio/*.m4a` | 206 Türkçe ses klibi: sorular, cevaplar, geri bildirim (bkz. [Seslendirme](#-seslendirme)) |
 | `worker.js` | Cloudflare Worker: `/api/scores` (D1) + statik sunum |
 | `schema.sql` | D1 tablo şeması |
 | `wrangler.toml` | Worker + D1 + statik varlık ayarları |
@@ -114,6 +142,7 @@ npx wrangler d1 execute carpim_tablosu --remote --command "DELETE FROM scores;" 
 ## 🔒 Güvenlik
 
 - 🔑 **Hiçbir API anahtarı kodda yer almaz.** D1'e "binding" ile erişilir; token yalnızca deploy sırasında ortam değişkeni olarak kullanılır.
+- 🎙️ ElevenLabs anahtarı yalnızca sesleri üretirken kullanıldı; uygulama çalışırken hiçbir harici ses servisine istek atmaz.
 - 🚫 `.gitignore`, `.wrangler/`, `.dev.vars` ve `node_modules/` klasörlerini dışarıda tutar — sırlar repoya girmez.
 - ✅ API girişleri sunucu tarafında doğrulanır ve sınırlanır (isim uzunluğu, sayısal aralıklar) — SQL sorguları parametrelidir.
 
@@ -124,5 +153,5 @@ npx wrangler d1 execute carpim_tablosu --remote --command "DELETE FROM scores;" 
 MIT — bkz. [LICENSE](LICENSE). Dilediğiniz gibi kullanın, geliştirin, paylaşın.
 
 <div align="center">
-<sub>❤️ ile çocuklar için yapıldı.</sub>
+<sub>❤️ ile çocuklar için yapıldı · Seslendirme: <a href="https://elevenlabs.io">ElevenLabs</a></sub>
 </div>

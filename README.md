@@ -52,7 +52,7 @@ Oyundaki tüm sesler [ElevenLabs](https://elevenlabs.io) ile **önceden bir kez 
 | | |
 |---|---|
 | 🤖 **Model** | `eleven_v3` (ElevenLabs'in en doğal/ifadeli modeli) |
-| 🗣️ **Ses** | Matilda — sıcak, anlaşılır, çocuklara uygun |
+| 🗣️ **Ses** | ElevenLabs Ses Kütüphanesi'nden doğal bir ses (Voice ID: `LLz3hpCJoVCSPagm5OP1`) |
 | 🇹🇷 **Dil** | Türkçe (`tr`); sayılar rakamla değil yazıyla seslendirildi ("yetmiş iki") |
 | 🎧 **Format** | AAC / `.m4a`, 22 kHz mono — klip başına ~15 KB, toplam ~3 MB |
 
@@ -68,7 +68,7 @@ Oyundaki tüm sesler [ElevenLabs](https://elevenlabs.io) ile **önceden bir kez 
 
 > 🔑 **Uygulama ElevenLabs'e hiç bağlanmaz.** API anahtarı yalnızca sesler üretilirken kullanıldı; kodda, repoda veya yayındaki sitede **yer almaz**. Oyun oynandıkça ek ücret de oluşmaz.
 
-Sesleri değiştirmek isterseniz, aynı adlarla yeni `.m4a` dosyaları koyup `public/sw.js` içindeki `CACHE` sürümünü artırmanız (ör. `carpim-v6` → `carpim-v7`) yeterlidir; böylece yüklü uygulamalar yeni sesleri indirir.
+Sesleri değiştirmek isterseniz, aynı adlarla yeni `.m4a` dosyaları koyup `public/sw.js` içindeki `CACHE` sürümünü artırmanız (ör. `carpim-v7` → `carpim-v8`) yeterlidir; böylece yüklü uygulamalar yeni sesleri indirir.
 
 ---
 

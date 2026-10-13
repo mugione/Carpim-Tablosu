@@ -65,7 +65,7 @@ Cloudflare Worker  ──►  D1 Veritabanı (skorlar)
 | `schema.sql` | D1 tablo şeması |
 | `wrangler.toml` | Worker + D1 + statik varlık ayarları |
 
-**Teknoloji:** Saf HTML/CSS/JS (çerçeve/derleme yok) · Web Speech API (seslendirme) · Cloudflare Workers + D1.
+**Teknoloji:** Saf HTML/CSS/JS (çerçeve/derleme yok) · ElevenLabs ile üretilmiş ses klipleri (seslendirme) · Cloudflare Workers + D1.
 
 ---
 
